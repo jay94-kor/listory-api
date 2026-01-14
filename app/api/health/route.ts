@@ -9,13 +9,18 @@ export async function GET(request: NextRequest) {
   // 1. Check Supabase connection
   try {
     const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_KEY;
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
-    if (!supabaseUrl || !supabaseKey) {
-      checks.supabase = { status: 'error', error: 'Missing configuration' };
+    if (!supabaseUrl || !supabaseServiceKey || !supabaseAnonKey) {
+      const missing = [];
+      if (!supabaseUrl) missing.push('URL');
+      if (!supabaseServiceKey) missing.push('SERVICE_KEY');
+      if (!supabaseAnonKey) missing.push('ANON_KEY');
+      checks.supabase = { status: 'error', error: `Missing: ${missing.join(', ')}` };
     } else {
       const supabaseStart = Date.now();
-      const supabase = createClient(supabaseUrl, supabaseKey);
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
       // Simple query to test connection
       const { error } = await supabase.from('users').select('count').limit(1).single();
