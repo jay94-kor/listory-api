@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate presigned URL
-    const { uploadUrl, publicUrl, path } = await generateUploadUrl(
+    const { uploadUrl, publicUrl, key } = await generateUploadUrl(
       type as FileType,
       user.id,
       filename,
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
       data: {
         upload_url: uploadUrl,
         public_url: publicUrl,
-        path: path,
+        path: key,
         method: 'PUT',
         expires_in: config.expiresIn,
         headers: {
