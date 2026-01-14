@@ -42,14 +42,14 @@ export async function GET(request: NextRequest) {
     ...((!openaiKey || !openaiKey.startsWith('sk-')) && { error: 'Invalid or missing API key' }),
   };
 
-  // 3. Check AssemblyAI configuration (Pro/Business tier STT)
+  // 3. Check AssemblyAI configuration (All tiers STT)
   const assemblyaiKey = process.env.ASSEMBLYAI_API_KEY;
   checks.assemblyai = {
     status: assemblyaiKey ? 'ok' : 'error',
     ...(!assemblyaiKey && { error: 'Missing API key' }),
   };
 
-  // 4. Check Deepgram configuration (Basic tier STT)
+  // 4. Check Deepgram configuration (Pro/Business tier STT - additional)
   const deepgramKey = process.env.DEEPGRAM_API_KEY;
   checks.deepgram = {
     status: deepgramKey ? 'ok' : 'error',
