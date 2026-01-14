@@ -1,18 +1,16 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-// Cloudflare R2 client (S3-compatible)
-const r2Client = new S3Client({
-  region: 'auto',
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+// AWS S3 client
+const s3Client = new S3Client({
+  region: process.env.AWS_REGION || 'ap-northeast-2',
   credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
   },
 });
 
-const BUCKET_NAME = process.env.R2_BUCKET_NAME!;
-const PUBLIC_URL = process.env.R2_PUBLIC_URL!;
+const BUCKET_NAME = process.env.AWS_S3_BUCKET!;
 
 // File type configurations
 export const FILE_CONFIGS = {
@@ -77,7 +75,7 @@ export async function generateUploadUrl(
   userId: string,
   filename: string,
   contentType: string
-): Promise<{ uploadUrl: string; publicUrl: string; path: string }> {
+): Promise<{ uploadUrl: string; publicUrl: string; key: string }> {
   const config = FILE_CONFIGS[type];
   const timestamp = Date.now();
   const safeName = filename.replace(/[^a-zA-Z0-9.-]/g, '_');
@@ -89,13 +87,14 @@ export async function generateUploadUrl(
     ContentType: contentType,
   });
 
-  const uploadUrl = await getSignedUrl(r2Client, command, {
+  const uploadUrl = await getSignedUrl(s3Client, command, {
     expiresIn: config.expiresIn,
   });
 
-  const publicUrl = `${PUBLIC_URL}/${key}`;
+  // S3 public URL format
+  const publicUrl = `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION || 'ap-northeast-2'}.amazonaws.com/${key}`;
 
-  return { uploadUrl, publicUrl, path: key };
+  return { uploadUrl, publicUrl, key };
 }
 
 // Generate presigned download URL
@@ -108,17 +107,17 @@ export async function generateDownloadUrl(
     Key: key,
   });
 
-  return getSignedUrl(r2Client, command, { expiresIn });
+  return getSignedUrl(s3Client, command, { expiresIn });
 }
 
-// Delete file from R2
+// Delete file from S3
 export async function deleteFile(key: string): Promise<void> {
   const command = new DeleteObjectCommand({
     Bucket: BUCKET_NAME,
     Key: key,
   });
 
-  await r2Client.send(command);
+  await s3Client.send(command);
 }
 
 // Extract user ID from file path for authorization
