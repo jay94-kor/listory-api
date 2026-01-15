@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getAuthenticatedUser, checkUserTier } from '@/lib/supabase';
+import { getAuthenticatedUser, checkUserTier, createServerClient } from '@/lib/supabase';
 import { startTranscription, getStatusMessage } from '@/lib/assemblyai';
+import { checkRateLimit, recordUsage } from '@/lib/rate-limit';
 
 // Request validation schema
 const requestSchema = z.object({
@@ -30,8 +31,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Note: In production, implement rate limiting for basic tier (10/month)
-    // This would require tracking usage in a separate table
+    // Rate limiting for basic tier
+    const supabase = createServerClient();
+    const effectiveTier = profile?.tier || 'basic';
+    const { allowed: withinLimit, remaining, limit } = await checkRateLimit(
+      supabase,
+      user.id,
+      effectiveTier,
+      'transcribe'
+    );
+
+    if (!withinLimit) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            message: `Monthly limit reached (${limit}/month for Basic plan). Upgrade to Pro for unlimited access.`,
+            code: 'RATE_LIMIT_EXCEEDED',
+            remaining: 0,
+            limit,
+          },
+        },
+        { status: 429 }
+      );
+    }
 
     // Parse and validate request body
     const body = await request.json();
@@ -59,6 +82,9 @@ export async function POST(request: NextRequest) {
       language,
       enable_diarization
     );
+
+    // Record usage after successful job start
+    await recordUsage(supabase, user.id, 'transcribe');
 
     return NextResponse.json(
       {

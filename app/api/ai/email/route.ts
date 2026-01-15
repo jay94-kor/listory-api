@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getAuthenticatedUser } from '@/lib/supabase';
+import { getAuthenticatedUser, checkUserTier, createServerClient } from '@/lib/supabase';
 import { getOpenAIClient, EMAIL_SYSTEM_PROMPT } from '@/lib/openai';
+import { checkRateLimit, recordUsage } from '@/lib/rate-limit';
 
 // Request validation schema
 const requestSchema = z.object({
@@ -33,6 +34,40 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: { message: 'Unauthorized', code: 'AUTH_ERROR' } },
         { status: 401 }
+      );
+    }
+
+    // Check tier
+    const { allowed, profile, error: tierError } = await checkUserTier(request, ['basic', 'pro', 'business']);
+    if (!allowed) {
+      return NextResponse.json(
+        { success: false, error: { message: tierError || 'Subscription required', code: 'TIER_ERROR' } },
+        { status: 403 }
+      );
+    }
+
+    // Rate limiting
+    const supabase = createServerClient();
+    const effectiveTier = profile?.tier || 'basic';
+    const { allowed: withinLimit, remaining, limit } = await checkRateLimit(
+      supabase,
+      user.id,
+      effectiveTier,
+      'email'
+    );
+
+    if (!withinLimit) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            message: `Monthly email generation limit reached (${limit}/month for Basic plan). Upgrade to Pro for unlimited access.`,
+            code: 'RATE_LIMIT_EXCEEDED',
+            remaining: 0,
+            limit,
+          },
+        },
+        { status: 429 }
       );
     }
 
@@ -147,6 +182,9 @@ export async function POST(request: NextRequest) {
 
     // Parse AI response
     const emailResult = JSON.parse(content);
+
+    // Record usage after successful email generation
+    await recordUsage(supabase, user.id, 'email');
 
     return NextResponse.json({
       success: true,
