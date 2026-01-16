@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     const openai = getOpenAIClient();
 
     // Retrieve Vector Store to check file counts
-    const vectorStore = await openai.beta.vectorStores.retrieve(vector_store_id);
+    const vectorStore = await openai.vectorStores.retrieve(vector_store_id);
 
     // Check file counts
     const { in_progress, completed, failed } = vectorStore.file_counts;

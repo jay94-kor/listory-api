@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     const openai = getOpenAIClient();
 
     // Create Vector Store for user
-    const vectorStore = await openai.beta.vectorStores.create({
+    const vectorStore = await openai.vectorStores.create({
       name: `Listory Knowledge Base - ${user.id}`,
     });
 

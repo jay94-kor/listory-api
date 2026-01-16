@@ -41,7 +41,7 @@ export async function DELETE(
     // If vector store ID provided, remove file from vector store first
     if (vectorStoreId) {
       try {
-        await openai.beta.vectorStores.files.del(vectorStoreId, fileId);
+        await openai.vectorStores.files.del(vectorStoreId, fileId);
       } catch (error) {
         console.warn('Failed to remove file from vector store:', error);
         // Continue to delete file even if vector store removal fails

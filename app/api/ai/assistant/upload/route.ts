@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Attach file to vector store
-    await openai.beta.vectorStores.files.create(vector_store_id, {
+    await openai.vectorStores.files.create(vector_store_id, {
       file_id: file.id,
     });
 
