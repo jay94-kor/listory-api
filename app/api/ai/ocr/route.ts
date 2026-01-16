@@ -137,8 +137,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('OCR error:', error);
 
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
     // Handle specific OpenAI errors
-    if (error instanceof Error && error.message.includes('rate_limit')) {
+    if (errorMessage.includes('rate_limit')) {
       return NextResponse.json(
         {
           success: false,
@@ -148,10 +150,35 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Handle invalid API key
+    if (errorMessage.includes('Incorrect API key') || errorMessage.includes('invalid_api_key')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: { message: 'AI service configuration error', code: 'CONFIG_ERROR' },
+        },
+        { status: 500 }
+      );
+    }
+
+    // Handle image URL access errors
+    if (errorMessage.includes('Could not process image') || errorMessage.includes('Invalid image')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: { message: '이미지를 처리할 수 없습니다. 다른 이미지로 시도해주세요.', code: 'IMAGE_ERROR' },
+        },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
       {
         success: false,
-        error: { message: 'OCR processing failed', code: 'SERVER_ERROR' },
+        error: {
+          message: `OCR 처리 실패: ${errorMessage.substring(0, 100)}`,
+          code: 'SERVER_ERROR'
+        },
       },
       { status: 500 }
     );
