@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getAuthenticatedUser, checkUserTier, createServerClient } from '@/lib/supabase';
 import { getOpenAIClient, OCR_SYSTEM_PROMPT } from '@/lib/openai';
 import { checkRateLimit, recordUsage } from '@/lib/rate-limit';
+import { generateDownloadUrl } from '@/lib/s3';
 
 // Request validation schema
 const requestSchema = z.object({
@@ -74,6 +75,23 @@ export async function POST(request: NextRequest) {
 
     const { image_url } = parseResult.data;
 
+    // Extract S3 key from public URL and generate presigned URL for OpenAI access
+    let accessibleUrl = image_url;
+    const s3UrlPattern = /https:\/\/([^.]+)\.s3\.([^.]+)\.amazonaws\.com\/(.+)/;
+    const match = image_url.match(s3UrlPattern);
+
+    if (match) {
+      const key = decodeURIComponent(match[3]);
+      try {
+        // Generate presigned download URL (valid for 15 minutes)
+        accessibleUrl = await generateDownloadUrl(key, 900);
+        console.log('Generated presigned URL for S3 key:', key);
+      } catch (s3Error) {
+        console.error('Failed to generate presigned URL:', s3Error);
+        // Continue with original URL as fallback
+      }
+    }
+
     // Call OpenAI Vision API
     const openai = getOpenAIClient();
     const response = await openai.chat.completions.create({
@@ -88,7 +106,7 @@ export async function POST(request: NextRequest) {
           content: [
             {
               type: 'image_url',
-              image_url: { url: image_url, detail: 'high' },
+              image_url: { url: accessibleUrl, detail: 'high' },
             },
           ],
         },
