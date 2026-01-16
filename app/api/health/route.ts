@@ -32,11 +32,11 @@ export async function GET(request: NextRequest) {
   const aiConfigured = !!(process.env.OPENAI_API_KEY && process.env.ASSEMBLY_AI_API_KEY);
   checks.ai_services = { status: aiConfigured ? 'ok' : 'error' };
 
-  // 3. Check storage (without revealing provider)
+  // 3. Check storage (AWS S3)
   const storageConfigured = !!(
-    process.env.R2_ACCOUNT_ID &&
-    process.env.R2_ACCESS_KEY_ID &&
-    process.env.R2_SECRET_ACCESS_KEY
+    process.env.AWS_ACCESS_KEY_ID &&
+    process.env.AWS_SECRET_ACCESS_KEY &&
+    process.env.AWS_S3_BUCKET
   );
   checks.storage = { status: storageConfigured ? 'ok' : 'error' };
 
