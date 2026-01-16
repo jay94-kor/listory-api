@@ -22,13 +22,13 @@ export const FILE_CONFIGS = {
   },
   audio: {
     maxSize: 500 * 1024 * 1024, // 500MB
-    allowedTypes: ['audio/wav', 'audio/mpeg', 'audio/mp4', 'audio/webm', 'audio/m4a'],
+    allowedTypes: ['audio/wav', 'audio/x-wav', 'audio/mpeg', 'audio/mp4', 'audio/webm', 'audio/m4a'],
     path: 'audio',
     expiresIn: 3600, // 1 hour for large files
   },
   voice_memo: {
     maxSize: 50 * 1024 * 1024, // 50MB
-    allowedTypes: ['audio/wav', 'audio/mpeg', 'audio/mp4', 'audio/webm', 'audio/m4a'],
+    allowedTypes: ['audio/wav', 'audio/x-wav', 'audio/mpeg', 'audio/mp4', 'audio/webm', 'audio/m4a'],
     path: 'memos',
     expiresIn: 900,
   },

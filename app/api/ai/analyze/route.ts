@@ -105,24 +105,56 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Call OpenAI API
+    // Call OpenAI API with retry logic
     const openai = getOpenAIClient();
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: ANALYSIS_SYSTEM_PROMPT,
-        },
-        {
-          role: 'user',
-          content: `다음 미팅 내용을 분석해주세요.${contextString}\n\n[미팅 녹취록]\n${transcript}`,
-        },
-      ],
-      response_format: { type: 'json_object' },
-      max_tokens: 4000,
-      temperature: 0.3,
-    });
+    const maxRetries = 2;
+    let lastError: any = null;
+    let response;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`OpenAI API call attempt ${attempt + 1}/${maxRetries + 1}`);
+        response = await openai.chat.completions.create({
+          model: 'gpt-4o',
+          messages: [
+            {
+              role: 'system',
+              content: ANALYSIS_SYSTEM_PROMPT,
+            },
+            {
+              role: 'user',
+              content: `다음 미팅 내용을 분석해주세요.${contextString}\n\n[미팅 녹취록]\n${transcript}`,
+            },
+          ],
+          response_format: { type: 'json_object' },
+          max_tokens: 4000,
+          temperature: 0.3,
+        });
+        break; // Success, exit retry loop
+      } catch (err: any) {
+        lastError = err;
+        console.error(`OpenAI API attempt ${attempt + 1} failed:`, {
+          message: err.message,
+          code: err.code,
+          type: err.type,
+          status: err.status,
+        });
+
+        // Don't retry on authentication or rate limit errors
+        if (err.status === 401 || err.status === 429) {
+          throw err;
+        }
+
+        // Wait before retry (exponential backoff)
+        if (attempt < maxRetries) {
+          await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)));
+        }
+      }
+    }
+
+    if (!response) {
+      throw lastError || new Error('OpenAI API call failed after retries');
+    }
 
     const content = response.choices[0]?.message?.content;
     if (!content) {
@@ -157,10 +189,21 @@ export async function POST(request: NextRequest) {
       success: true,
       data: analysisResult,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Analysis error:', error);
 
-    if (error instanceof Error && error.message.includes('rate_limit')) {
+    // Extract detailed error info
+    const errorMessage = error.message || 'Analysis failed';
+    const errorCode = error.code || error.status || 'SERVER_ERROR';
+    const errorType = error.type || error.name || 'UnknownError';
+
+    console.error('Analysis error details:', {
+      message: errorMessage,
+      code: errorCode,
+      type: errorType,
+    });
+
+    if (errorMessage.includes('rate_limit')) {
       return NextResponse.json(
         {
           success: false,
@@ -173,7 +216,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        error: { message: 'Analysis failed', code: 'SERVER_ERROR' },
+        error: { message: errorMessage, code: errorCode, type: errorType },
       },
       { status: 500 }
     );

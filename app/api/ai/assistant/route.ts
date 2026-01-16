@@ -78,12 +78,27 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Assistant initialization error:', error);
+
+    // Extract detailed error info for debugging
+    const errorMessage = error.message || 'Failed to initialize assistant';
+    const errorCode = error.code || error.status || 'SERVER_ERROR';
+    const errorType = error.type || error.name || 'UnknownError';
+
+    // Log detailed error for Vercel logs
+    console.error('Error details:', {
+      message: errorMessage,
+      code: errorCode,
+      type: errorType,
+      stack: error.stack,
+    });
+
     return NextResponse.json(
       {
         success: false,
         error: {
-          message: error.message || 'Failed to initialize assistant',
-          code: 'SERVER_ERROR',
+          message: errorMessage,
+          code: errorCode,
+          type: errorType,
         },
       },
       { status: 500 }

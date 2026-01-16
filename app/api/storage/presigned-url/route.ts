@@ -69,7 +69,8 @@ export async function POST(request: NextRequest) {
       data: {
         upload_url: uploadUrl,
         public_url: publicUrl,
-        path: key,
+        key: key, // Flutter expects 'key', not 'path'
+        path: key, // Keep 'path' for backward compatibility
         method: 'PUT',
         expires_in: config.expiresIn,
         headers: {
