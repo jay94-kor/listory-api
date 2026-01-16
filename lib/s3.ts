@@ -85,7 +85,8 @@ export async function generateUploadUrl(
     Bucket: BUCKET_NAME,
     Key: key,
     ContentType: contentType,
-    ACL: 'public-read', // Allow OpenAI to access uploaded images
+    // ACL 제거 - Block Public Access 설정으로 인해 실패할 수 있음
+    // 대신 OCR 엔드포인트에서 presigned download URL 사용
   });
 
   const uploadUrl = await getSignedUrl(s3Client, command, {
