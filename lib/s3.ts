@@ -85,6 +85,7 @@ export async function generateUploadUrl(
     Bucket: BUCKET_NAME,
     Key: key,
     ContentType: contentType,
+    ACL: 'public-read', // Allow OpenAI to access uploaded images
   });
 
   const uploadUrl = await getSignedUrl(s3Client, command, {
