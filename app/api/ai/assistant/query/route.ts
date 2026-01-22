@@ -97,19 +97,45 @@ export async function POST(request: NextRequest) {
       // The first message is the latest (assistant's response)
       const latestMessage = messages.data[0];
       let response = '';
+      let citations: string[] = [];
 
       if (latestMessage && latestMessage.content && latestMessage.content.length > 0) {
         const contentBlock = latestMessage.content[0];
         if (contentBlock.type === 'text') {
           response = contentBlock.text.value;
+          
+          // Extract file citations from annotations
+          if (contentBlock.text.annotations && contentBlock.text.annotations.length > 0) {
+            for (const annotation of contentBlock.text.annotations) {
+              if (annotation.type === 'file_citation') {
+                const fileId = (annotation as any).file_citation?.file_id;
+                if (fileId) {
+                  try {
+                    // Get file info to extract filename
+                    const file = await openai.files.retrieve(fileId);
+                    if (file.filename) {
+                      citations.push(file.filename);
+                    }
+                  } catch (fileError) {
+                    // If we can't get file info, use file_id as fallback
+                    citations.push(`file:${fileId}`);
+                  }
+                }
+              }
+            }
+          }
         }
       }
+
+      // Deduplicate citations
+      const uniqueCitations = [...new Set(citations)];
 
       return NextResponse.json({
         success: true,
         data: {
           response,
           thread_id: threadId, // Still return for debugging, but will be deleted
+          citations: uniqueCitations.length > 0 ? uniqueCitations : null,
         },
       });
     } catch (error: any) {
