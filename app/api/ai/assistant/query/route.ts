@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Deduplicate citations
-      const uniqueCitations = [...new Set(citations)];
+      const uniqueCitations = Array.from(new Set(citations));
 
       return NextResponse.json({
         success: true,
