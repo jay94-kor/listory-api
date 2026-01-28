@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getAuthenticatedUser, checkUserTier, createServerClient } from '@/lib/supabase';
 import { getOpenAIClient, ANALYSIS_SYSTEM_PROMPT } from '@/lib/openai';
 import { checkRateLimit, recordUsage } from '@/lib/rate-limit';
+import { analysisResponseSchema } from '@/lib/schemas/ai-response';
 
 // Request validation schema
 const requestSchema = z.object({
@@ -181,6 +182,24 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       );
     }
+
+    // Validate AI response with Zod schema
+    const validation = analysisResponseSchema.safeParse(analysisResult);
+    if (!validation.success) {
+      console.error('AI response validation failed:', validation.error);
+      return NextResponse.json(
+        {
+          success: false,
+          error: { 
+            message: 'AI response validation failed', 
+            code: 'PARSE_ERROR',
+            details: validation.error.flatten()
+          },
+        },
+        { status: 500 }
+      );
+    }
+    analysisResult = validation.data; // Use validated data
 
     // Record usage after successful analysis
     await recordUsage(supabase, user.id, 'analyze');
