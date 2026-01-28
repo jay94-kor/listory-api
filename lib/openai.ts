@@ -56,15 +56,15 @@ Return a JSON object with the following fields:
   "suggested_score": 0-100 (likelihood of conversion),
   "suggested_status": "hot" | "warm" | "cold",
   "suggested_followup_date": "ISO date string for recommended follow-up",
-  "action_plan": [
-    {
-      "title": "Action item title",
-      "type": "email" | "call" | "meeting" | "document" | "internal" | "other",
-      "priority": "critical" | "high" | "medium" | "low",
-      "due_in_days": number,
-      "description": "Detailed description"
-    }
-  ]
+   "action_plan": [
+     {
+       "title": "Action item title",
+       "type": "email" | "call" | "meeting" | "document" | "material" | "research" | "internal" | "other",
+       "priority": "critical" | "high" | "medium" | "low",
+       "due_in_days": number,
+       "description": "Detailed description"
+     }
+   ]
 }
 
 Rules:
@@ -74,7 +74,8 @@ Rules:
 - Score based on buying signals strength
 - Action items should be concrete and time-bound
 - For tmi_info, extract any personal details mentioned (hobbies, family, travel, etc.)
-- For small_talk_topics, suggest conversation starters based on tmi_info`;
+- For small_talk_topics, suggest conversation starters based on tmi_info
+- Action types: email (follow-up email), call (phone call), meeting (schedule meeting), document (send document), material (send materials/samples), research (conduct research), internal (internal task), other (miscellaneous)`;
 
 // Email generation prompt
 export const EMAIL_SYSTEM_PROMPT = `You are a professional business email writer specialized in B2B sales follow-ups.
