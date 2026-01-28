@@ -9,31 +9,26 @@ export interface RateLimitConfig {
   };
 }
 
-// API별 월간 사용량 제한 설정
 export const RATE_LIMITS: Record<string, RateLimitConfig> = {
   transcribe: {
     apiType: 'transcribe',
-    tierLimits: { basic: 10, pro: 0, business: 0 },
+    tierLimits: { basic: 3, pro: 0, business: 0 },
   },
   ocr: {
     apiType: 'ocr',
-    tierLimits: { basic: 50, pro: 0, business: 0 },
+    tierLimits: { basic: 3, pro: 0, business: 0 },
   },
   analyze: {
     apiType: 'analyze',
-    tierLimits: { basic: 20, pro: 0, business: 0 },
+    tierLimits: { basic: 3, pro: 0, business: 0 },
   },
   email: {
     apiType: 'email',
-    tierLimits: { basic: 30, pro: 0, business: 0 },
+    tierLimits: { basic: 3, pro: 0, business: 0 },
   },
   deepgram_token: {
     apiType: 'deepgram_token',
-    tierLimits: {
-      basic: 0,      // Basic tier blocked from real-time features
-      pro: 0,        // Unlimited monthly (per-minute limit handled in endpoint)
-      business: 0,   // Unlimited monthly (per-minute limit handled in endpoint)
-    },
+    tierLimits: { basic: 0, pro: 0, business: 0 },
   },
 };
 
