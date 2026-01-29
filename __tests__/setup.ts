@@ -8,6 +8,7 @@ beforeAll(() => {
   process.env.AWS_SECRET_ACCESS_KEY = 'mock-secret-key';
   process.env.AWS_S3_BUCKET = 'mock-bucket';
   process.env.ASSEMBLYAI_API_KEY = 'mock-assemblyai-key';
+  process.env.DEEPGRAM_API_KEY = 'mock-deepgram-key';
 });
 
 afterEach(() => {
