@@ -14,6 +14,7 @@ const config = {
     '!**/node_modules/**',
   ],
   coveragePathIgnorePatterns: ['/node_modules/', '/.next/'],
+  coverageReporters: ['text', 'text-summary', 'html', 'lcov'],
   setupFilesAfterEnv: ['<rootDir>/__tests__/setup.ts'],
   testPathIgnorePatterns: ['/node_modules/', '/.next/'],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
