@@ -30,7 +30,7 @@ export function createMockOpenAIClient(options: MockOpenAIOptions = {}) {
       prompt_tokens: 100,
       completion_tokens: 50,
       total_tokens: 150,
-    },
+    } as any,
   };
 
   return {
@@ -61,16 +61,18 @@ export function createMockOpenAIClient(options: MockOpenAIOptions = {}) {
 
 export function createMockOCRResponse() {
   return {
-    name: '김철수',
-    company: 'ABC 주식회사',
-    position: '영업 이사',
-    department: '영업팀',
-    email: 'kim@abc.com',
-    phone: '010-1234-5678',
-    landline: '02-1234-5678',
-    fax: null,
-    address: '서울시 강남구 테헤란로 123',
-    website: 'www.abc.com',
+    name: { value: '김철수', confidence: 0.95 },
+    company: { value: 'ABC 주식회사', confidence: 0.92 },
+    position: { value: '영업 이사', confidence: 0.88 },
+    department: { value: '영업팀', confidence: 0.85 },
+    email: { value: 'kim@abc.com', confidence: 0.98 },
+    phone: { value: '010-1234-5678', confidence: 0.96 },
+    landline: { value: '02-1234-5678', confidence: 0.90 },
+    fax: { value: null, confidence: 0.0 },
+    address: { value: '서울시 강남구 테헤란로 123', confidence: 0.87 },
+    website: { value: 'www.abc.com', confidence: 0.94 },
+    needs_review: false,
+    detected_languages: ['ko'],
   };
 }
 

@@ -205,8 +205,11 @@ describe('POST /api/ai/ocr', () => {
       expect(response.data.success).toBe(true);
       expect(response.data.data).toBeDefined();
       expect(response.data.data.name).toBeDefined();
+      expect(response.data.data.name.value).toBe('김철수');
+      expect(response.data.data.name.confidence).toBe(0.95);
       expect(response.data.data.company).toBeDefined();
-      expect(response.data.data.confidence).toBeDefined();
+      expect(response.data.data.needs_review).toBeDefined();
+      expect(response.data.data.detected_languages).toBeDefined();
     });
 
     it('should handle S3 URLs and generate presigned URL', async () => {
@@ -322,7 +325,10 @@ describe('POST /api/ai/ocr', () => {
 
       expect(response.data).toHaveProperty('success', true);
       expect(response.data).toHaveProperty('data');
-      expect(response.data.data).toHaveProperty('confidence');
+      expect(response.data.data).toHaveProperty('needs_review');
+      expect(response.data.data).toHaveProperty('detected_languages');
+      expect(response.data.data.name).toHaveProperty('value');
+      expect(response.data.data.name).toHaveProperty('confidence');
     });
   });
 });

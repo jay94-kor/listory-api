@@ -4,6 +4,7 @@ import { getAuthenticatedUser, checkUserTier, createServerClient } from '@/lib/s
 import { getOpenAIClient, OCR_SYSTEM_PROMPT } from '@/lib/openai';
 import { checkRateLimit, recordUsage } from '@/lib/rate-limit';
 import { generateDownloadUrl } from '@/lib/s3';
+import { ocrResponseSchema } from '@/lib/schemas/ocr-response';
 
 // Request validation schema
 const requestSchema = z.object({
@@ -142,15 +143,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate OCR response format
+    const validationResult = ocrResponseSchema.safeParse(extractedData);
+    if (!validationResult.success) {
+      console.error('OCR response validation failed:', validationResult.error);
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            message: 'Invalid OCR response format',
+            code: 'VALIDATION_ERROR',
+          },
+        },
+        { status: 500 }
+      );
+    }
+
+    // Log token usage
+    if (response.usage) {
+      console.log('Token usage:', {
+        prompt_tokens: response.usage.prompt_tokens,
+        completion_tokens: response.usage.completion_tokens,
+        total_tokens: response.usage.total_tokens,
+      });
+    }
+
     // Record usage after successful OCR
     await recordUsage(supabase, user.id, 'ocr');
 
     return NextResponse.json({
       success: true,
-      data: {
-        ...extractedData,
-        confidence: 0.95, // High confidence for GPT-4o Vision
-      },
+      data: validationResult.data,
     });
   } catch (error) {
     console.error('OCR error:', error);
