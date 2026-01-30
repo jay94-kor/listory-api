@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { createHash } from 'crypto';
 import { getAuthenticatedUser, checkUserTier, createServerClient } from '@/lib/supabase';
 import { getOpenAIClient, COACHING_SYSTEM_PROMPT } from '@/lib/openai';
 import { recordUsage } from '@/lib/rate-limit';
+import { sanitizeUserInput } from '@/lib/sanitize';
+import { coachingResponseSchema } from '@/lib/schemas/coaching-response';
 
 // Request validation schema
 const requestSchema = z.object({
@@ -15,6 +18,8 @@ const requestSchema = z.object({
       current_score: z.number().min(0).max(100).optional(),
     })
     .optional(),
+  recent_tips: z.array(z.string()).max(50).optional(), // Tip hashes for deduplication
+  meeting_start_time: z.string().optional(), // ISO timestamp
 });
 
 export async function POST(request: NextRequest) {
@@ -61,7 +66,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { transcript_chunk, context } = parseResult.data;
+    const { transcript_chunk, context, recent_tips } = parseResult.data;
+
+    // Sanitize user input
+    const sanitizedTranscript = sanitizeUserInput(transcript_chunk);
 
     // Build context string
     let contextString = '';
@@ -95,7 +103,7 @@ export async function POST(request: NextRequest) {
             },
             {
               role: 'user',
-              content: `${contextString}[대화]\n${transcript_chunk}`,
+              content: `${contextString}[대화]\n${sanitizedTranscript}`,
             },
           ],
           response_format: { type: 'json_object' },
@@ -136,17 +144,49 @@ export async function POST(request: NextRequest) {
         });
       }
 
+      // Generate tip hash for deduplication
+      const tipHash = createHash('md5')
+        .update(coachingResult.tip)
+        .digest('hex')
+        .substring(0, 8);
+
+      // Check if duplicate tip (15-minute deduplication window handled client-side)
+      if (recent_tips?.includes(tipHash)) {
+        return NextResponse.json({
+          success: true,
+          data: null,
+        });
+      }
+
+      // Add tip_hash to result
+      coachingResult.tip_hash = tipHash;
+
+      // Validate coaching response format
+      const validationResult = coachingResponseSchema.safeParse(coachingResult);
+      if (!validationResult.success) {
+        console.error('Coaching response validation failed:', validationResult.error);
+        return NextResponse.json({
+          success: true,
+          data: null,
+        });
+      }
+
+      // Log token usage
+      if (response.usage) {
+        console.log('Token usage:', {
+          prompt_tokens: response.usage.prompt_tokens,
+          completion_tokens: response.usage.completion_tokens,
+          total_tokens: response.usage.total_tokens,
+        });
+      }
+
       // Record usage after successful coaching response
       const supabase = createServerClient();
       await recordUsage(supabase, user.id, 'coach');
 
       return NextResponse.json({
         success: true,
-        data: {
-          tip: coachingResult.tip,
-          category: coachingResult.category,
-          priority: coachingResult.priority || 'medium',
-        },
+        data: validationResult.data,
       });
     } catch (abortError) {
       clearTimeout(timeoutId);

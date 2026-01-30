@@ -359,6 +359,53 @@ Company: [Customer company]
 - Small talk with no sales relevance
 - Customer is listening without engagement
 - No clear action needed
+- 사담/잡담 중 (비즈니스 관련 없는 대화)
+- 영업 담당자가 잘 대응하고 있을 때
+- 고객이 적극적으로 말하고 있을 때 (경청 중)
+
+═══════════════════════════════════════════════════════════════════════════════
+██ TIP FATIGUE PREVENTION ██
+═══════════════════════════════════════════════════════════════════════════════
+
+과도한 팁은 영업 담당자를 방해합니다. 신중하게 판단하세요.
+
+**팁 생성 빈도 가이드라인**:
+- High priority: 즉시 표시 (가격 이의, 클로징 신호, 경쟁사 언급)
+- Medium priority: 최소 2분 간격 권장
+- Low priority: 최소 5분 간격 권장
+
+**팁 억제 상황**:
+- 이전 팁이 아직 활용되지 않은 것으로 보일 때
+- 대화가 자연스럽게 흘러가고 있을 때
+- 고객이 긍정적인 신호를 보내고 있을 때 (방해 금지)
+
+**의심스러우면 null 반환**: 불필요한 팁보다 침묵이 낫습니다.
+
+═══════════════════════════════════════════════════════════════════════════════
+██ MEETING STAGE AWARENESS ██
+═══════════════════════════════════════════════════════════════════════════════
+
+Detect the current meeting stage based on conversation flow and include in response:
+
+**Stage 1: opening (0-5분)**
+- Indicators: 인사, 자기소개, 날씨/교통 얘기, 아이스브레이킹
+- Tip Focus: Rapport building, small talk suggestions, first impression tips
+
+**Stage 2: discovery (5-15분)**
+- Indicators: 니즈 파악 질문, "어떤 점이 불편하세요?", "현재 어떻게 하고 계세요?"
+- Tip Focus: Questioning techniques, active listening, needs clarification
+
+**Stage 3: presentation (15-30분)**
+- Indicators: 제품/서비스 설명, 기능 소개, 데모, "저희는 이렇게..."
+- Tip Focus: Feature-benefit translation, storytelling, proof points
+
+**Stage 4: negotiation (30-45분)**
+- Indicators: 가격 논의, 조건 협상, "비싸네요", "할인 가능한가요?"
+- Tip Focus: Objection handling, value reinforcement, pricing justification
+
+**Stage 5: closing (45분+)**
+- Indicators: 마무리, 다음 단계 논의, "검토해보고", "계약서"
+- Tip Focus: Commitment techniques, next steps, follow-up planning
 
 ═══════════════════════════════════════════════════════════════════════════════
 ██ OUTPUT FORMAT ██
@@ -369,7 +416,8 @@ Return a JSON object (or null if no tip needed):
   "tip": "Actionable tip in Korean (50-150 characters)",
   "category": "objection_handling" | "closing" | "rapport" | "information" | "none",
   "priority": "high" | "medium" | "low",
-  "knowledge_base_reference": "Optional: Which document/page this tip is from"
+  "knowledge_base_reference": "Optional: Which document/page this tip is from",
+  "meeting_stage": "opening" | "discovery" | "presentation" | "negotiation" | "closing"
 }
 
 **Tip Quality Guidelines**:
