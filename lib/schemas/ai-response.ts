@@ -9,6 +9,21 @@ const actionPlanItemSchema = z.object({
   description: z.string(),
 });
 
+// TMI item schema with categorization
+const tmiItemSchema = z.object({
+  category: z.enum(['hobby', 'family', 'travel', 'food', 'sports', 'work', 'other']),
+  content: z.string(),
+  context: z.string().optional(), // When/how mentioned
+  recency: z.enum(['new', 'referenced']).optional(), // New or from history
+});
+
+// Small talk topic schema with priority
+const smallTalkTopicSchema = z.object({
+  topic: z.string(),
+  priority: z.enum(['high', 'medium', 'low']),
+  based_on: z.string(), // Which TMI this relates to
+});
+
 // AI analysis response schema with passthrough for flexibility
 export const analysisResponseSchema = z
   .object({
@@ -19,8 +34,8 @@ export const analysisResponseSchema = z
     positive_signals: z.array(z.string()),
     negative_signals: z.array(z.string()),
     negotiation_tip: z.string(),
-    tmi_info: z.array(z.string()),
-    small_talk_topics: z.array(z.string()),
+    tmi_info: z.array(tmiItemSchema),
+    small_talk_topics: z.array(smallTalkTopicSchema),
     suggested_score: z.number().min(0).max(100),
     suggested_status: z.enum(['hot', 'warm', 'cold']),
     suggested_followup_date: z.string(),
@@ -30,3 +45,5 @@ export const analysisResponseSchema = z
 
 // Export TypeScript type inferred from schema
 export type AnalysisResponse = z.infer<typeof analysisResponseSchema>;
+export type TmiItem = z.infer<typeof tmiItemSchema>;
+export type SmallTalkTopic = z.infer<typeof smallTalkTopicSchema>;
