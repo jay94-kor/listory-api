@@ -10,7 +10,7 @@ const actionPlanItemSchema = z.object({
 });
 
 // TMI item schema with categorization
-const tmiItemSchema = z.object({
+export const tmiItemSchema = z.object({
   category: z.enum(['hobby', 'family', 'travel', 'food', 'sports', 'work', 'other']),
   content: z.string(),
   context: z.string().optional(), // When/how mentioned

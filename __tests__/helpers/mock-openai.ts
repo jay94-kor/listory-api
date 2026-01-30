@@ -83,8 +83,21 @@ export function createMockAnalysisResponse() {
     positive_signals: ['제품 기능에 관심 표현', '데모 요청'],
     negative_signals: [],
     negotiation_tip: '가격 협상 시 장기 계약 할인 제안',
-    tmi_info: ['골프 취미'],
-    small_talk_topics: ['최근 라운딩 경험'],
+    tmi_info: [
+      {
+        category: 'hobby',
+        content: '골프 취미',
+        context: '미팅 중 언급',
+        recency: 'new',
+      },
+    ],
+    small_talk_topics: [
+      {
+        topic: '최근 라운딩 경험',
+        priority: 'high',
+        based_on: '골프 취미',
+      },
+    ],
     suggested_score: 85,
     suggested_status: 'hot',
     suggested_followup_date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],

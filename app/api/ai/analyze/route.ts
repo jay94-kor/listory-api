@@ -3,7 +3,23 @@ import { z } from 'zod';
 import { getAuthenticatedUser, checkUserTier, createServerClient } from '@/lib/supabase';
 import { getOpenAIClient, ANALYSIS_SYSTEM_PROMPT } from '@/lib/openai';
 import { checkRateLimit, recordUsage } from '@/lib/rate-limit';
-import { analysisResponseSchema } from '@/lib/schemas/ai-response';
+import { analysisResponseSchema, tmiItemSchema, TmiItem } from '@/lib/schemas/ai-response';
+import { sanitizeUserInput } from '@/lib/sanitize';
+
+// Previous activity schema
+const previousActivitySchema = z.object({
+  type: z.string(),
+  title: z.string(),
+  date: z.string(),
+});
+
+// User profile schema
+const userProfileSchema = z.object({
+  name: z.string().optional(),
+  company: z.string().optional(),
+  position: z.string().optional(),
+  product_info: z.string().optional(),
+});
 
 // Request validation schema
 const requestSchema = z.object({
@@ -18,6 +34,12 @@ const requestSchema = z.object({
       current_score: z.number().min(0).max(100).optional(),
     })
     .optional(),
+  // New context fields for enhanced analysis
+  voice_memo: z.string().max(2000).optional(),
+  previous_activities: z.array(previousActivitySchema).max(10).optional(),
+  user_profile: userProfileSchema.optional(),
+  materials_list: z.array(z.string()).max(20).optional(),
+  previous_tmi: z.array(tmiItemSchema).max(20).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -83,10 +105,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { transcript, lead_context } = parseResult.data;
+    const { 
+      transcript, 
+      lead_context, 
+      voice_memo, 
+      previous_activities, 
+      user_profile, 
+      materials_list, 
+      previous_tmi 
+    } = parseResult.data;
 
-    // Build context string
-    let contextString = '';
+    const sanitizedTranscript = sanitizeUserInput(transcript);
+    const sanitizedVoiceMemo = voice_memo ? sanitizeUserInput(voice_memo) : undefined;
+
+    const contextParts: string[] = [];
+
     if (lead_context) {
       const parts = [];
       if (lead_context.name) parts.push(`고객명: ${lead_context.name}`);
@@ -102,9 +135,44 @@ export async function POST(request: NextRequest) {
         parts.push(`현재 점수: ${lead_context.current_score}점`);
       }
       if (parts.length > 0) {
-        contextString = `\n\n[고객 정보]\n${parts.join('\n')}`;
+        contextParts.push(`[고객 정보]\n${parts.join('\n')}`);
       }
     }
+
+    if (previous_tmi && previous_tmi.length > 0) {
+      const tmiLines = previous_tmi.map(
+        (tmi) => `- [${tmi.category}] ${tmi.content}${tmi.context ? ` (${tmi.context})` : ''}`
+      );
+      contextParts.push(`[이전 TMI - 스몰톡에 활용하세요]\n${tmiLines.join('\n')}`);
+    }
+
+    if (sanitizedVoiceMemo) {
+      contextParts.push(`[음성 메모]\n${sanitizedVoiceMemo}`);
+    }
+
+    if (previous_activities && previous_activities.length > 0) {
+      const activityLines = previous_activities.map(
+        (act) => `- ${act.date}: [${act.type}] ${act.title}`
+      );
+      contextParts.push(`[이전 활동]\n${activityLines.join('\n')}`);
+    }
+
+    if (user_profile) {
+      const profileParts = [];
+      if (user_profile.name) profileParts.push(`담당자명: ${user_profile.name}`);
+      if (user_profile.company) profileParts.push(`소속: ${user_profile.company}`);
+      if (user_profile.position) profileParts.push(`직책: ${user_profile.position}`);
+      if (user_profile.product_info) profileParts.push(`제품/서비스: ${user_profile.product_info}`);
+      if (profileParts.length > 0) {
+        contextParts.push(`[영업 담당자]\n${profileParts.join('\n')}`);
+      }
+    }
+
+    if (materials_list && materials_list.length > 0) {
+      contextParts.push(`[발송 가능 자료]\n${materials_list.map((m) => `- ${m}`).join('\n')}`);
+    }
+
+    const contextString = contextParts.length > 0 ? '\n\n' + contextParts.join('\n\n') : '';
 
     // Call OpenAI API with retry logic
     const openai = getOpenAIClient();
@@ -124,7 +192,7 @@ export async function POST(request: NextRequest) {
             },
             {
               role: 'user',
-              content: `다음 미팅 내용을 분석해주세요.${contextString}\n\n[미팅 녹취록]\n${transcript}`,
+              content: `다음 미팅 내용을 분석해주세요.${contextString}\n\n[미팅 녹취록]\n${sanitizedTranscript}`,
             },
           ],
           response_format: { type: 'json_object' },
@@ -155,6 +223,14 @@ export async function POST(request: NextRequest) {
 
     if (!response) {
       throw lastError || new Error('OpenAI API call failed after retries');
+    }
+
+    if (response.usage) {
+      console.log('Token usage:', {
+        prompt_tokens: response.usage.prompt_tokens,
+        completion_tokens: response.usage.completion_tokens,
+        total_tokens: response.usage.total_tokens,
+      });
     }
 
     const content = response.choices[0]?.message?.content;
