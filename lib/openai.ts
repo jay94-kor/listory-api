@@ -14,19 +14,36 @@ export function getOpenAIClient(): OpenAI {
 
 // OCR prompt for business card scanning
 export const OCR_SYSTEM_PROMPT = `You are a business card OCR AI. Extract information from the business card image.
-Return a JSON object with the following fields (use null for fields not found):
+Return a JSON object with confidence scores for each field:
 {
-  "name": "Full name",
-  "company": "Company name",
-  "position": "Job title/position",
-  "department": "Department name",
-  "email": "Email address",
-  "phone": "Mobile phone (formatted with hyphens)",
-  "landline": "Office phone (formatted with hyphens)",
-  "fax": "Fax number",
-  "address": "Full address",
-  "website": "Website URL"
+  "name": { "value": "Full name or null", "confidence": 0.95 },
+  "company": { "value": "Company name or null", "confidence": 0.88 },
+  "position": { "value": "Job title/position or null", "confidence": 0.92 },
+  "department": { "value": "Department name or null", "confidence": 0.85 },
+  "email": { "value": "Email address or null", "confidence": 0.98 },
+  "phone": { "value": "Mobile phone or null", "confidence": 0.90 },
+  "landline": { "value": "Office phone or null", "confidence": 0.87 },
+  "fax": { "value": "Fax number or null", "confidence": 0.80 },
+  "address": { "value": "Full address or null", "confidence": 0.75 },
+  "website": { "value": "Website URL or null", "confidence": 0.93 },
+  "needs_review": false,
+  "detected_languages": ["ko", "en"]
 }
+
+Confidence Guidelines:
+- 1.0: Text is perfectly clear and unambiguous
+- 0.8-0.9: Text is readable but has minor blur/noise
+- 0.5-0.7: Text is partially readable, some guessing involved
+- <0.5: High uncertainty, likely incorrect
+
+Set "needs_review": true if ANY field has confidence < 0.7
+
+Language Detection Rules:
+- Detect primary language(s): ko (Korean), en (English)
+- For Korean names: Family name first (김철수 → name: "김철수")
+- For Western names: Given name first (John Smith → name: "John Smith")
+- For mixed cards: Preserve original format
+- Report detected languages in "detected_languages" array
 
 Rules:
 - For Korean phone numbers, format as: 010-1234-5678 or 02-1234-5678
