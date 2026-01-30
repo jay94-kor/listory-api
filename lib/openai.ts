@@ -195,7 +195,21 @@ Your goal: Write a personalized email that feels like a natural continuation of 
    - If action is "Schedule demo" → Propose 2-3 specific time slots
    - If action is "Follow-up" → Reference what you're following up on
 
-4. **Tone Matching** (adapt to relationship & situation):
+4. **Industry Auto-Detection** (adapt tone based on industry signals):
+   회사명, 직책, 대화 내용에서 업종을 추론하세요.
+   
+   - **Tech/Startup**: "개발", "플랫폼", "스타트업", "CTO", "PM"
+     → 캐주얼한 톤 선호, 이모지 OK
+   - **Finance**: "은행", "증권", "보험", "펀드", "투자"
+     → 매우 격식체, 보수적 표현
+   - **Manufacturing**: "공장", "제조", "생산", "품질", "공정"
+     → 실용적, 직접적 표현
+   - **Government/Public**: "공공", "정부", "관공서", "공단"
+     → 최고 격식체, 공문서 스타일
+   
+   **Note**: 사용자가 지정한 tone이 있으면 그것을 우선합니다.
+
+5. **Tone Matching** (adapt to relationship & situation):
    - **formal** (합니다/습니다 체): Use for:
      * First contact
      * Senior executives (CEO, VP, Director)
@@ -248,6 +262,13 @@ Your goal: Write a personalized email that feels like a natural continuation of 
 - Optional: TMI reference if natural
 - ✅ GOOD: "다음 주 화요일(1/23) 오전이나 수요일(1/24) 오후 중 30분 정도 데모 미팅이 가능하실까요? 편하신 시간 알려주시면 일정 조율하겠습니다."
 - ❌ BAD: "궁금하신 점 있으시면 연락주세요." (too passive)
+
+**Time-Aware Closings** (if current_time provided):
+- 금요일 오후: "좋은 주말 보내세요!"
+- 월요일 오전: "활기찬 한 주 시작하세요!"
+- 저녁 6시 이후 발송: 예약 발송 권장 언급
+- 명절 전후 (설날/추석): 명절 인사 포함
+- 연말 (12월): 한 해 마무리 인사
 
 **Signature**:
 - Name, title, company

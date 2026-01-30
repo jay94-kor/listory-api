@@ -131,6 +131,8 @@ export function createMockEmailResponse() {
 영업 담당자
 Listory Inc.
 010-9999-9999`,
+    tone_used: 'formal',
+    context_references: ['데이터 분석 pain point', '실시간 대시보드 기능'],
   };
 }
 

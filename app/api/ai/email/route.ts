@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { getAuthenticatedUser, checkUserTier, createServerClient } from '@/lib/supabase';
 import { getOpenAIClient, EMAIL_SYSTEM_PROMPT } from '@/lib/openai';
 import { checkRateLimit, recordUsage } from '@/lib/rate-limit';
+import { sanitizeUserInput } from '@/lib/sanitize';
+import { emailResponseSchema } from '@/lib/schemas/email-response';
 
 // Request validation schema
 const requestSchema = z.object({
@@ -24,6 +26,7 @@ const requestSchema = z.object({
   sender_company: z.string().optional(),
   sender_position: z.string().optional(),
   custom_instructions: z.string().optional(),
+  current_time: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -97,6 +100,7 @@ export async function POST(request: NextRequest) {
       sender_company,
       sender_position,
       custom_instructions,
+      current_time,
     } = parseResult.data;
 
     // Build email type description
@@ -147,7 +151,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (custom_instructions) {
-      contextParts.push('', `[추가 지시사항]`, custom_instructions);
+      contextParts.push('', `[추가 지시사항]`, sanitizeUserInput(custom_instructions));
+    }
+
+    if (current_time) {
+      const date = new Date(current_time);
+      const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+      const hour = date.getHours();
+      contextParts.push('', `[현재 시간 정보]`, `요일: ${dayOfWeek}요일, 시간: ${hour}시`);
     }
 
     // Call OpenAI API
@@ -195,14 +206,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate email response format
+    const validationResult = emailResponseSchema.safeParse(emailResult);
+    if (!validationResult.success) {
+      console.error('Email response validation failed:', validationResult.error);
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            message: 'Invalid email response format',
+            code: 'VALIDATION_ERROR',
+          },
+        },
+        { status: 500 }
+      );
+    }
+
+    // Log token usage
+    if (response.usage) {
+      console.log('Token usage:', {
+        prompt_tokens: response.usage.prompt_tokens,
+        completion_tokens: response.usage.completion_tokens,
+        total_tokens: response.usage.total_tokens,
+      });
+    }
+
     // Record usage after successful email generation
     await recordUsage(supabase, user.id, 'email');
 
     return NextResponse.json({
       success: true,
       data: {
-        subject: emailResult.subject,
-        body: emailResult.body,
+        subject: validationResult.data.subject,
+        body: validationResult.data.body,
+        tone_used: validationResult.data.tone_used,
         type: type,
         tone: tone,
       },
