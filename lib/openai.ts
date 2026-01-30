@@ -42,6 +42,33 @@ IMPORTANT: You will receive [고객 정보] (customer info) section with verifie
 - STT (Speech-to-Text) may mishear names (e.g., "장동재" → "장봉재"), so trust [고객 정보] over transcript
 - Use company name from [고객 정보] if provided
 
+═══════════════════════════════════════
+██ TMI EXTRACTION (CRITICAL for Rapport) ██
+═══════════════════════════════════════
+
+TMI (Too Much Information)는 고객과의 관계 구축에 핵심입니다.
+사담에서 언급된 개인 정보를 빠짐없이 추출하세요.
+
+**TMI 카테고리**:
+- hobby: 취미, 여가 활동 (골프, 등산, 독서 등)
+- family: 가족 관련 (자녀, 배우자, 부모님 등)
+- travel: 여행, 출장 (최근 여행, 계획 중인 여행)
+- food: 음식, 맛집 (좋아하는 음식, 추천 식당)
+- sports: 스포츠 (응원 팀, 직접 하는 운동)
+- work: 업무 외 경력 (이전 직장, 학교 동문 등)
+- other: 기타 개인 정보
+
+**이전 TMI가 제공된 경우**:
+- [이전 TMI] 섹션의 정보를 참조하세요
+- 새로 언급된 정보와 연결점을 찾으세요
+- 예: 이전에 "골프"를 좋아한다고 했는데, 이번에 "주말에 라운딩 갔다"고 하면 연결
+- small_talk_topics에 시의성 있는 주제를 우선 배치하세요
+
+**Small Talk 우선순위**:
+- high: 최근 언급 + 감정적 연결 (예: 자녀 생일)
+- medium: 반복 언급된 관심사 (예: 꾸준히 언급되는 골프)
+- low: 일회성 언급
+
 Return a JSON object with the following fields:
 {
   "summary": "2-3 sentence meeting summary in Korean. MUST use customer name from [고객 정보]",
@@ -51,8 +78,21 @@ Return a JSON object with the following fields:
   "positive_signals": ["Array of positive buying signals"],
   "negative_signals": ["Array of concerns or objections"],
   "negotiation_tip": "One actionable tip for next interaction",
-  "tmi_info": ["Array of personal details for rapport building (hobbies, family, interests mentioned)"],
-  "small_talk_topics": ["Array of conversation starters for next meeting based on personal info"],
+  "tmi_info": [
+    {
+      "category": "hobby" | "family" | "travel" | "food" | "sports" | "work" | "other",
+      "content": "구체적 내용",
+      "context": "언급된 맥락 (optional)",
+      "recency": "new" | "referenced" (optional)
+    }
+  ],
+  "small_talk_topics": [
+    {
+      "topic": "스몰톡 주제",
+      "priority": "high" | "medium" | "low",
+      "based_on": "어떤 TMI 기반인지"
+    }
+  ],
   "suggested_score": 0-100 (likelihood of conversion),
   "suggested_status": "hot" | "warm" | "cold",
   "suggested_followup_date": "ISO date string for recommended follow-up",
@@ -73,8 +113,9 @@ Rules:
 - Be specific and actionable
 - Score based on buying signals strength
 - Action items should be concrete and time-bound
-- For tmi_info, extract any personal details mentioned (hobbies, family, travel, etc.)
-- For small_talk_topics, suggest conversation starters based on tmi_info
+- For tmi_info, categorize each personal detail with category, content, context, and recency
+- For small_talk_topics, create prioritized conversation starters with topic, priority, and based_on fields
+- Use "recency": "new" for newly mentioned TMI, "referenced" for TMI from [이전 TMI] section
 - Action types: email (follow-up email), call (phone call), meeting (schedule meeting), document (send document), material (send materials/samples), research (conduct research), internal (internal task), other (miscellaneous)`;
 
 // Email generation prompt
