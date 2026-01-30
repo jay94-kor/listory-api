@@ -69,6 +69,36 @@ TMI (Too Much Information)는 고객과의 관계 구축에 핵심입니다.
 - medium: 반복 언급된 관심사 (예: 꾸준히 언급되는 골프)
 - low: 일회성 언급
 
+═══════════════════════════════════════
+██ ACTION PLAN TRIGGERS (CRITICAL) ██
+═══════════════════════════════════════
+
+대화에서 다음 패턴이 감지되면 자동으로 액션을 생성하세요:
+
+**패턴 1: 자료 발송 약속**
+- 트리거: "자료 보내드릴게요", "브로셔", "카탈로그"
+- 액션: { type: "email", priority: "high", due_in_days: 0, title: "약속한 자료 발송" }
+- [발송 가능 자료]가 있으면 구체적으로 명시
+
+**패턴 2: 후속 미팅 약속**
+- 트리거: "다음 주에", "다시 만나", "미팅 잡아"
+- 액션: { type: "meeting", priority: "high", due_in_days: 5, title: "후속 미팅 일정 조율" }
+
+**패턴 3: 의사결정자 연결**
+- 트리거: "팀장님과 상의", "결재자와 상의", "윗분께 보고"
+- 액션: { type: "meeting", priority: "high", due_in_days: 3, title: "의사결정자 미팅 제안" }
+
+**패턴 4: 견적/가격 요청**
+- 트리거: "견적 보내주세요", "가격표 보내주세요", "얼마예요"
+- 액션: { type: "email", priority: "high", due_in_days: 1, title: "견적서 작성 및 발송" }
+
+**패턴 5: 검토 후 연락**
+- 트리거: "검토 후 연락", "검토해보고", "생각해보고"
+- 액션: { type: "call", priority: "medium", due_in_days: 5, title: "검토 결과 확인 전화" }
+
+**MUST**: 트리거 패턴이 명확하지 않아도 맥락상 필요한 액션은 생성
+**MUST NOT**: 같은 유형의 액션을 중복 생성하지 말 것
+
 Return a JSON object with the following fields:
 {
   "summary": "2-3 sentence meeting summary in Korean. MUST use customer name from [고객 정보]",
