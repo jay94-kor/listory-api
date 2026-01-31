@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { getAuthenticatedUser, checkUserTier, createServerClient } from '@/lib/supabase';
 import { startTranscription, getStatusMessage } from '@/lib/assemblyai';
 import { checkRateLimit, recordUsage } from '@/lib/rate-limit';
+import { generateDownloadUrl } from '@/lib/s3';
 
 // Request validation schema
 const requestSchema = z.object({
@@ -76,9 +77,25 @@ export async function POST(request: NextRequest) {
 
     const { audio_url, language, enable_diarization } = parseResult.data;
 
+    // If audio_url is an S3 URL from our bucket, generate a presigned download URL
+    // so AssemblyAI can actually access the file (S3 Block Public Access is enabled)
+    const s3BucketHost = `${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || 'ap-northeast-2'}.amazonaws.com`;
+    let accessibleUrl = audio_url;
+    
+    if (audio_url.includes(s3BucketHost)) {
+      try {
+        const url = new URL(audio_url);
+        const key = decodeURIComponent(url.pathname.slice(1)); // remove leading /
+        accessibleUrl = await generateDownloadUrl(key, 3600); // 1 hour expiry
+        console.log('Generated presigned download URL for AssemblyAI');
+      } catch (e) {
+        console.error('Failed to generate presigned URL, using original:', e);
+      }
+    }
+
     // Start transcription job
     const { jobId, status } = await startTranscription(
-      audio_url,
+      accessibleUrl,
       language,
       enable_diarization
     );
